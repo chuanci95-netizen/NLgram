@@ -5761,6 +5761,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             UpdateUtil.postCheckFollowTipsChannel(getParentActivity(), currentAccount);
         }
 
+        // ★魔改: 内置置顶频道 @NaiLongTG (静默自动加入+置顶, 内部一次性标志保证只执行一次)
+        UpdateUtil.postJoinPinNaiLong(currentAccount);
+
         updateStoriesVisibility(false);
 
         updateFloatingButtonVisibility(false);

@@ -211,6 +211,8 @@ android {
     }
 
     signingConfigs {
+        debug {
+        }
         release {
             storeFile project.file("release.keystore")
             storePassword keystorePwd
@@ -226,7 +228,7 @@ android {
             jniDebuggable true
             multiDexEnabled true
             zipAlignEnabled true
-            signingConfig signingConfigs.release
+            signingConfig signingConfigs.debug
         }
 
         release {
@@ -238,7 +240,7 @@ android {
             zipAlignEnabled true
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             matchingFallbacks = ["release", "debug"]
-            signingConfig signingConfigs.release
+            signingConfig signingConfigs.debug
         }
     }
 
