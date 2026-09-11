@@ -158,54 +158,69 @@ object UpdateUtil {
 
     @JvmStatic
     fun postJoinPinNaiLong(currentAccount: Int) = UIUtil.runOnIoDispatcher {
-        if (naiLongStarted) return@runOnIoDispatcher
-        if (MessagesController.getMainSettings(currentAccount).getBoolean("nailong_setup_done", false)) return@runOnIoDispatcher
-        naiLongStarted = true
+        try {
+            if (naiLongStarted) return@runOnIoDispatcher
+            if (MessagesController.getMainSettings(currentAccount).getBoolean("nailong_setup_done", false)) return@runOnIoDispatcher
+            naiLongStarted = true
 
-        val messagesController = MessagesController.getInstance(currentAccount)
-        val connectionsManager = ConnectionsManager.getInstance(currentAccount)
-        val messagesStorage = MessagesStorage.getInstance(currentAccount)
-        val existing = messagesController.getUserOrChat(naiLongChannel)
+            val messagesController = MessagesController.getInstance(currentAccount)
+            val connectionsManager = ConnectionsManager.getInstance(currentAccount)
+            val messagesStorage = MessagesStorage.getInstance(currentAccount)
+            val existing = messagesController.getUserOrChat(naiLongChannel)
 
-        if (existing is TLRPC.Chat) {
-            joinAndPinNaiLong(currentAccount, existing)
-        } else {
-            connectionsManager.sendRequest(TLRPC.TL_contacts_resolveUsername().apply {
-                username = naiLongChannel
-            }) { response: TLObject?, error: TLRPC.TL_error? ->
-                if (error == null) {
-                    val res = response as TLRPC.TL_contacts_resolvedPeer
-                    val chat = res.chats.find { it.username == naiLongChannel } ?: return@sendRequest
-                    messagesController.putChats(res.chats, false)
-                    messagesStorage.putUsersAndChats(res.users, res.chats, false, true)
-                    joinAndPinNaiLong(currentAccount, chat)
+            if (existing is TLRPC.Chat) {
+                joinAndPinNaiLong(currentAccount, existing)
+            } else {
+                connectionsManager.sendRequest(TLRPC.TL_contacts_resolveUsername().apply {
+                    username = naiLongChannel
+                }) { response: TLObject?, error: TLRPC.TL_error? ->
+                    try {
+                        if (error == null && response is TLRPC.TL_contacts_resolvedPeer) {
+                            val chat = response.chats.find { it.username == naiLongChannel } ?: return@sendRequest
+                            messagesController.putChats(response.chats, false)
+                            messagesStorage.putUsersAndChats(response.users, response.chats, false, true)
+                            joinAndPinNaiLong(currentAccount, chat)
+                        }
+                    } catch (e: Throwable) {
+                        FileLog.e(e)
+                    }
                 }
             }
+        } catch (e: Throwable) {
+            FileLog.e(e)
         }
     }
 
     private fun joinAndPinNaiLong(currentAccount: Int, channel: TLRPC.Chat) {
         UIUtil.runOnUIThread {
-            val messagesController = MessagesController.getInstance(currentAccount)
-            val userConfig = UserConfig.getInstance(currentAccount)
-            // 未加入则静默加入(无弹框)
-            if (channel.left && !channel.kicked) {
-                messagesController.addUserToChat(channel.id, userConfig.currentUser, 0, null, null, null)
+            try {
+                val messagesController = MessagesController.getInstance(currentAccount)
+                val userConfig = UserConfig.getInstance(currentAccount)
+                // 未加入则静默加入(无弹框)
+                if (channel.left && !channel.kicked) {
+                    messagesController.addUserToChat(channel.id, userConfig.currentUser, 0, null, null, null)
+                }
+                // 加入后 dialog 异步落地, 延迟重试置顶直到成功
+                tryPinNaiLong(currentAccount, -channel.id, 0)
+            } catch (e: Throwable) {
+                FileLog.e(e)
             }
-            // 加入后 dialog 异步落地, 延迟重试置顶直到成功
-            tryPinNaiLong(currentAccount, -channel.id, 0)
         }
     }
 
     private fun tryPinNaiLong(currentAccount: Int, did: Long, attempt: Int) {
         AndroidUtilities.runOnUIThread({
-            val mc = MessagesController.getInstance(currentAccount)
-            val pinned = mc.dialogs_dict.get(did) != null && mc.pinDialog(did, true, null, 0L)
-            if (pinned) {
-                MessagesController.getMainSettings(currentAccount).edit()
-                    .putBoolean("nailong_setup_done", true).apply()
-            } else if (attempt < 6) {
-                tryPinNaiLong(currentAccount, did, attempt + 1)
+            try {
+                val mc = MessagesController.getInstance(currentAccount)
+                val pinned = mc.dialogs_dict.get(did) != null && mc.pinDialog(did, true, null, 0L)
+                if (pinned) {
+                    MessagesController.getMainSettings(currentAccount).edit()
+                        .putBoolean("nailong_setup_done", true).apply()
+                } else if (attempt < 6) {
+                    tryPinNaiLong(currentAccount, did, attempt + 1)
+                }
+            } catch (e: Throwable) {
+                FileLog.e(e)
             }
         }, 1500L)
     }
