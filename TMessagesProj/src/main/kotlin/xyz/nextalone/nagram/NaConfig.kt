@@ -31,6 +31,13 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    // ★魔改(NLgram): 无视编辑消息(他人编辑消息时保留原消息不更新)
+    val ignoreEditMessage =
+        addConfig(
+            "IgnoreEditMessage",
+            ConfigItem.configTypeBool,
+            false
+        )
     val disableSecondAddress =
         addConfig(
             "disableSecondAddress",

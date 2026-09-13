@@ -19855,7 +19855,10 @@ public class MessagesController extends BaseController implements NotificationCe
                     arr = new ArrayList<>();
                     array.put(message.dialog_id, arr);
                 }
-                arr.add(obj);
+                // ★魔改(NLgram): 无视编辑消息 — 开关开且为他人编辑(!out)时不加入更新列表, 保留原消息不刷新
+                if (!(xyz.nextalone.nagram.NaConfig.INSTANCE.getIgnoreEditMessage().Bool() && !message.out)) {
+                    arr.add(obj);
+                }
             } else if (baseUpdate instanceof TL_update.TL_updatePinnedChannelMessages) {
                 TL_update.TL_updatePinnedChannelMessages update = (TL_update.TL_updatePinnedChannelMessages) baseUpdate;
                 if (BuildVars.LOGS_ENABLED) {
