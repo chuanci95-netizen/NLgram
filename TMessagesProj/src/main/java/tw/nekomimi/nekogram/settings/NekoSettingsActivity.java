@@ -69,6 +69,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
     private int passcodeRow;
     private int experimentRow;
     private int nlDownloadSpeedRow;
+    private int nlInterfaceRow;
     private int categories2Row;
 
     private int aboutRow;
@@ -110,6 +111,8 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
             presentFragment(new NekoExperimentalSettingsActivity());
         } else if (position == nlDownloadSpeedRow) {
             presentFragment(new NekoDownloadSpeedSettingsActivity());
+        } else if (position == nlInterfaceRow) {
+            presentFragment(new NekoInterfaceSettingsActivity());
         } else if (position == channelRow) {
             getMessagesController().openByUserName(channelUsername, this, 1);
         } else if (position == channelTipsRow) {
@@ -162,6 +165,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
         }
         experimentRow = addRow("experiment");
         nlDownloadSpeedRow = addRow("nlDownloadSpeed");
+        nlInterfaceRow = addRow("nlInterface");
         categories2Row = addRow();
 
         aboutRow = addRow("about");
@@ -236,6 +240,8 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
                         textCell.setTextAndIcon(LocaleController.getString(R.string.Experiment), R.drawable.msg_fave, divider);
                     } else if (position == nlDownloadSpeedRow) {
                         textCell.setTextAndIcon("下载速度", R.drawable.msg_download, divider);
+                    } else if (position == nlInterfaceRow) {
+                        textCell.setTextAndIcon("界面设置", R.drawable.msg_colors, divider);
                     }
                     break;
                 }

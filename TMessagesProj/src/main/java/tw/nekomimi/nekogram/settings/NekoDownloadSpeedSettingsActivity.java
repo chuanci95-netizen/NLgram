@@ -23,11 +23,6 @@ public class NekoDownloadSpeedSettingsActivity extends BaseNekoXSettingsActivity
 
     private final CellGroup a = cellGroup = new CellGroup(this);
 
-    // 液态玻璃(高斯模糊)开关 —— 复用 forceBlurInChat
-    private final AbstractConfigCell headerGlass = cellGroup.appendCell(new ConfigCellHeader("界面"));
-    private final AbstractConfigCell liquidGlassRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.forceBlurInChat, null, "液态玻璃"));
-    private final AbstractConfigCell dividerGlass = cellGroup.appendCell(new ConfigCellDivider());
-
     // 下载加速倍速(单选: 开一个自动关其他)
     private final AbstractConfigCell headerSpeed = cellGroup.appendCell(new ConfigCellHeader("下载速度"));
     private final AbstractConfigCell boost4xRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.downloadBoost4x, null, "4 倍加速"));
