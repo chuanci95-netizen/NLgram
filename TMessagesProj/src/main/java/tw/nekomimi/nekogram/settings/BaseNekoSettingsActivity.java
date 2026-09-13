@@ -119,25 +119,8 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
         listView.setSections(true);
         listView.setAdapter(listAdapter);
         listView.setOnItemClickListener(this::onItemClick);
-        listView.setOnItemLongClickListener((view, position, x, y) -> {
-            if (onItemLongClick(view, position, x, y)) {
-                return true;
-            }
-            var holder = listView.findViewHolderForAdapterPosition(position);
-            var key = getKey();
-            if (key != null && holder != null && listAdapter.isEnabled(holder) && rowMapReverse.containsKey(position)) {
-                showDialog(new AlertDialog.Builder(context)
-                        .setItems(
-                                new CharSequence[]{LocaleController.getString(R.string.CopyLink)},
-                                (dialogInterface, i) -> {
-                                    AndroidUtilities.addToClipboard(String.format(Locale.getDefault(), settingsPrefix, getMessagesController().linkPrefix, getKey(), rowMapReverse.get(position)));
-                                    BulletinFactory.of(BaseNekoSettingsActivity.this).createCopyLinkBulletin().show();
-                                })
-                        .create());
-                return true;
-            }
-            return false;
-        });
+        // ★魔改(NLgram): 去掉长按设置项弹出的"复制链接"菜单(用户要求全部去掉), 仅保留子类onItemLongClick钩子
+        listView.setOnItemLongClickListener((view, position, x, y) -> onItemLongClick(view, position, x, y));
 
         actionBar.setAdaptiveBackground(listView);
         return fragmentView;

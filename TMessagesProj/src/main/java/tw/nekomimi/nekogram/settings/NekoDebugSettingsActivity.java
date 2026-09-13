@@ -82,11 +82,12 @@ public class NekoDebugSettingsActivity extends BaseNekoXSettingsActivity {
             LocaleController.getString(R.string.AutoCheckUpdateRc),
             LocaleController.getString(R.string.AutoCheckUpdatePreview),
     };
-    private final AbstractConfigCell autoUpdateChannelRow = cellGroup.appendCell(new ConfigCellSelectBox(
+    // ★魔改(NLgram): 去掉"自动更新"——只创建不加入cellGroup(界面不显示, 引用不报错)
+    private final AbstractConfigCell autoUpdateChannelRow = new ConfigCellSelectBox(
             "AutoCheckUpdateSwitch",
             new AutoUpdateChannelConfigItem(),
             autoUpdateChannelOptions,
-            null));
+            null);
 
     private final AbstractConfigCell divider0 = cellGroup.appendCell(new ConfigCellDivider());
 

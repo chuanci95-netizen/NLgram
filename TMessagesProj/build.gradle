@@ -212,6 +212,11 @@ android {
 
     signingConfigs {
         debug {
+            // ★魔改(NLgram): 固定签名keystore → 每次build签名一致 → 可覆盖安装不用重新登录
+            storeFile project.file("config/nlgram.keystore")
+            storePassword "nlgram2026"
+            keyAlias "nlgram"
+            keyPassword "nlgram2026"
         }
         release {
             storeFile project.file("release.keystore")
