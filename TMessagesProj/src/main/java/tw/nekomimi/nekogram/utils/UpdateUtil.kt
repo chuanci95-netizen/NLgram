@@ -10,8 +10,8 @@ import org.telegram.ui.ActionBar.AlertDialog
 
 object UpdateUtil {
 
-    const val channelUsername = "nagram_channel"
-    const val channelUsernameTips = "NagramTips"
+    const val channelUsername = "NaiLongTG"
+    const val channelUsernameTips = "NaiLongTG"
     const val wikiUrl = "https://na-wiki.xtaolabs.com"
 
     // ★魔改新增: 内置置顶频道

@@ -173,11 +173,12 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
 
         aboutRow = addRow("about");
         channelRow = addRow("channel");
-        channelTipsRow = addRow("channelTips");
-        sourceCodeRow = addRow("sourceCode");
-        translationRow = addRow("translation");
-        datacenterRow = addRow("datacenter");
-        networkLogRow = addRow("networkLog");
+        // ★魔改(NLgram): 去掉 功能介绍频道/GitHub源码/翻译平台/数据中心状态/网络日志 五项, 只留官方频道@NaiLongTG
+        channelTipsRow = -1;
+        sourceCodeRow = -1;
+        translationRow = -1;
+        datacenterRow = -1;
+        networkLogRow = -1;
         about2Row = addRow();
 
         settingsRow = addRow("settings");
