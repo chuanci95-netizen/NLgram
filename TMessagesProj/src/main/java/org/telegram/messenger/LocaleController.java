@@ -814,8 +814,10 @@ public class LocaleController {
             try {
                 SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                 String lang = preferences.getString("language", null);
-                if (lang == null) {
-                    lang = "zh_cn";   // ★魔改(NLgram): 应用语言默认中文(首次启动无保存语言时), 需要其他语言用户自己切换即可
+                // ★魔改(NLgram): 首次启动强制默认中文(一次性标志, 之后尊重用户手动切换)
+                if (!preferences.getBoolean("nlgram_lang_defaulted", false)) {
+                    lang = "zh_cn";
+                    preferences.edit().putBoolean("nlgram_lang_defaulted", true).apply();
                 }
                 if (lang != null) {
                     currentInfo = getLanguageFromDict(lang);

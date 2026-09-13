@@ -85,11 +85,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
     @Override
     public View createView(Context context) {
         View fragmentView = super.createView(context);
-
-        actionBar.createMenu()
-                .addItem(0, R.drawable.cloud_sync)
-                .setOnClickListener(v -> CloudSettingsHelper.getInstance().showDialog(NekoSettingsActivity.this));
-
+        // ★魔改(NLgram): 去掉右上角云同步图标(用户要求删除, 无需云设置)
         return fragmentView;
     }
 
