@@ -230,15 +230,17 @@ object UpdateUtil {
                 } else {
                     FileLog.d("NLPIN: $uname already member (left=${channel.left})")
                 }
-                // 加入后 dialog 异步落地, 激进重试置顶直到成功 (20 次 x 2s = 40s)
-                tryPinNaiLong(currentAccount, -channel.id, 0, uname)
+                // ★关键: joinChannel 后频道对话不会自动进 dialogs_dict(要等 getDialogs), pinDialog 找不到对话.
+                //   主动用 getPeerDialogs 把频道对话直接拉进 dialogs_dict, 再置顶.
+                messagesController.loadUnknownChannel(channel, 0L)
+                tryPinNaiLong(currentAccount, channel, -channel.id, 0, uname)
             } catch (e: Throwable) {
                 FileLog.e(e)
             }
         }
     }
 
-    private fun tryPinNaiLong(currentAccount: Int, did: Long, attempt: Int, uname: String) {
+    private fun tryPinNaiLong(currentAccount: Int, channel: TLRPC.Chat, did: Long, attempt: Int, uname: String) {
         AndroidUtilities.runOnUIThread({
             try {
                 val mc = MessagesController.getInstance(currentAccount)
@@ -253,9 +255,13 @@ object UpdateUtil {
                     }
                 } else {
                     FileLog.d("NLPIN: pin $uname did=$did attempt=$attempt present=false (dialog not loaded yet)")
+                    // 对话还没落地: 每隔几次重新触发一次 getPeerDialogs 拉取
+                    if (attempt == 1 || attempt == 4 || attempt == 8 || attempt == 13) {
+                        mc.loadUnknownChannel(channel, 0L)
+                    }
                 }
-                if (attempt < 20) {
-                    tryPinNaiLong(currentAccount, did, attempt + 1, uname)
+                if (attempt < 25) {
+                    tryPinNaiLong(currentAccount, channel, did, attempt + 1, uname)
                 } else {
                     FileLog.d("NLPIN: pin $uname GAVE UP after $attempt attempts")
                 }

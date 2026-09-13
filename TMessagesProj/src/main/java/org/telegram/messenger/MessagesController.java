@@ -16784,7 +16784,7 @@ public class MessagesController extends BaseController implements NotificationCe
         setUpdatesStartTime(type, 0);
     }
 
-    protected void loadUnknownChannel(final TLRPC.Chat channel, long taskId) {
+    public void loadUnknownChannel(final TLRPC.Chat channel, long taskId) {
         if (!(channel instanceof TLRPC.TL_channel) || gettingUnknownChannels.indexOfKey(channel.id) >= 0) {
             return;
         }
