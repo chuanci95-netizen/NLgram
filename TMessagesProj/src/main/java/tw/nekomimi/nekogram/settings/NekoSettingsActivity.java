@@ -210,7 +210,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
                     if (position == categoriesRow) {
                         headerCell.setText(LocaleController.getString(R.string.Categories));
                     } else if (position == aboutRow) {
-                        headerCell.setText(LocaleController.getString(R.string.About));
+                        headerCell.setText("官方频道");   // ★魔改(奶龙客户端): 关于→官方频道
                     }
                     break;
                 }
