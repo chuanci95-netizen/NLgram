@@ -65,6 +65,9 @@ public class NekoConfig {
 
     public static ConfigItem typeface = addConfig("TypefaceUseDefault", configTypeBool, false);
     public static ConfigItem nameOrder = addConfig("NameOrder", configTypeInt, 1);
+    // ★奶龙客户端 界面设置(深度版液态玻璃) —— 这两个是 LiteMode 位标志的 UI 镜像, 真值以 LiteMode 为准, 每次进页同步
+    public static ConfigItem liquidGlassEnable = addConfig("LiquidGlassEnable", configTypeBool, false);
+    public static ConfigItem gaussianBlurEnable = addConfig("GaussianBlurEnable", configTypeBool, true);
     public static ConfigItem mapPreviewProvider = addConfig("MapPreviewProvider", configTypeInt, 0);
     public static ConfigItem transparentStatusBar = addConfig("TransparentStatusBar", configTypeBool, true);
     public static ConfigItem forceBlurInChat = addConfig("forceBlurInChat", configTypeBool, false);
