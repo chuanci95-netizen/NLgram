@@ -62,6 +62,9 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
     private int generalRow;
     private int accountRow;
     private int chatRow;
+    private int nlTranslationRow;
+    private int nlAiRow;
+    private int nlMapRow;
     private int passcodeRow;
     private int experimentRow;
     private int debugRow;
@@ -97,6 +100,12 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
             presentFragment(new NekoAccountSettingsActivity());
         } else if (position == chatRow) {
             presentFragment(new NekoChatSettingsActivity());
+        } else if (position == nlTranslationRow) {
+            presentFragment(new NekoTranslationSettingsActivity());
+        } else if (position == nlAiRow) {
+            presentFragment(new NekoAiSettingsActivity());
+        } else if (position == nlMapRow) {
+            presentFragment(new NekoMapSettingsActivity());
         } else if (position == passcodeRow) {
             presentFragment(new NekoPasscodeSettingsActivity());
         } else if (position == experimentRow) {
@@ -158,6 +167,9 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
         generalRow = addRow("general");
         accountRow = addRow("account");
         chatRow = addRow("chat");
+        nlTranslationRow = addRow("nlTranslation");
+        nlAiRow = addRow("nlAi");
+        nlMapRow = addRow("nlMap");
         if (!PasscodeHelper.isSettingsHidden()) {
             passcodeRow = addRow("passcode");
         } else {
@@ -235,6 +247,12 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
                         textCell.setTextAndIcon(LocaleController.getString(R.string.Account), R.drawable.msg_contacts, divider);
                     } else if (position == chatRow) {
                         textCell.setTextAndIcon(LocaleController.getString(R.string.Chat), R.drawable.msg_discussion, divider);
+                    } else if (position == nlTranslationRow) {
+                        textCell.setTextAndIcon(LocaleController.getString("Translate", R.string.Translate), R.drawable.ic_translate, divider);
+                    } else if (position == nlAiRow) {
+                        textCell.setTextAndIcon(LocaleController.getString(R.string.PremiumPreviewAIEditor), R.drawable.premium_ai_editor, divider);
+                    } else if (position == nlMapRow) {
+                        textCell.setTextAndIcon(LocaleController.getString("Map", R.string.Map), R.drawable.baseline_map_24, divider);
                     } else if (position == passcodeRow) {
                         textCell.setTextAndIcon(LocaleController.getString(R.string.PasscodeNeko), R.drawable.msg_secret, divider);
                     } else if (position == experimentRow) {

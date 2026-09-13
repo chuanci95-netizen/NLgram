@@ -152,36 +152,59 @@ object UpdateUtil {
 
     }
 
-    // ★★★ 内置置顶频道 @NaiLongTG (魔改: 静默自动加入 + 自动置顶; 首次一次性, 之后尊重用户手动操作) ★★★
+    // ★★★ 内置官方频道@NaiLongTG + 官方群组@by520a2: 静默自动加入 + 自动置顶 (各自一次性, 成功后尊重用户手动操作) ★★★
     @Volatile
-    private var naiLongStarted = false
-    // ★魔改(NLgram): 内置官方频道@NaiLongTG + 官方群组@by520a2, 首次静默自动加入并置顶(各自一次性, 之后尊重用户手动操作)
+    private var naiLongRunning = false
     private val builtInChats = arrayOf("NaiLongTG", "by520a2")
 
     @JvmStatic
     fun postJoinPinNaiLong(currentAccount: Int) = UIUtil.runOnIoDispatcher {
         try {
-            if (naiLongStarted) return@runOnIoDispatcher
-            naiLongStarted = true
+            val prefs = MessagesController.getMainSettings(currentAccount)
+            val allDone = builtInChats.all { prefs.getBoolean("nailong_pin_$it", false) }
+            if (allDone) {
+                FileLog.d("NLPIN: all done, skip")
+                return@runOnIoDispatcher
+            }
+            if (naiLongRunning) {
+                FileLog.d("NLPIN: already running, skip")
+                return@runOnIoDispatcher
+            }
+            naiLongRunning = true
+            // 60s 后释放锁, 允许后续 resume 重试尚未完成的项 (防止首启过早 resolve 失败后永久卡死)
+            AndroidUtilities.runOnUIThread({ naiLongRunning = false }, 60000L)
 
             val messagesController = MessagesController.getInstance(currentAccount)
             val connectionsManager = ConnectionsManager.getInstance(currentAccount)
             val messagesStorage = MessagesStorage.getInstance(currentAccount)
 
             for (uname in builtInChats) {
-                if (MessagesController.getMainSettings(currentAccount).getBoolean("nailong_pin_$uname", false)) continue
+                if (prefs.getBoolean("nailong_pin_$uname", false)) continue
                 val existing = messagesController.getUserOrChat(uname)
                 if (existing is TLRPC.Chat) {
+                    FileLog.d("NLPIN: $uname cached chat id=${existing.id} left=${existing.left}")
                     joinAndPinNaiLong(currentAccount, existing, uname)
                 } else {
+                    FileLog.d("NLPIN: resolving $uname ...")
                     connectionsManager.sendRequest(TLRPC.TL_contacts_resolveUsername().apply {
                         username = uname
                     }) { response: TLObject?, error: TLRPC.TL_error? ->
                         try {
-                            if (error == null && response is TLRPC.TL_contacts_resolvedPeer) {
-                                val chat = response.chats.find { it.username.equals(uname, true) } ?: return@sendRequest
+                            if (error != null) {
+                                FileLog.d("NLPIN: resolve $uname ERROR=${error.text}")
+                                return@sendRequest
+                            }
+                            if (response is TLRPC.TL_contacts_resolvedPeer) {
+                                messagesController.putUsers(response.users, false)
                                 messagesController.putChats(response.chats, false)
                                 messagesStorage.putUsersAndChats(response.users, response.chats, false, true)
+                                val chat = response.chats.find { it.username != null && it.username.equals(uname, true) }
+                                    ?: response.chats.firstOrNull()
+                                if (chat == null) {
+                                    FileLog.d("NLPIN: resolve $uname NO CHAT in peer")
+                                    return@sendRequest
+                                }
+                                FileLog.d("NLPIN: resolved $uname -> id=${chat.id} left=${chat.left} kicked=${chat.kicked}")
                                 joinAndPinNaiLong(currentAccount, chat, uname)
                             }
                         } catch (e: Throwable) {
@@ -192,6 +215,7 @@ object UpdateUtil {
             }
         } catch (e: Throwable) {
             FileLog.e(e)
+            naiLongRunning = false
         }
     }
 
@@ -200,11 +224,13 @@ object UpdateUtil {
             try {
                 val messagesController = MessagesController.getInstance(currentAccount)
                 val userConfig = UserConfig.getInstance(currentAccount)
-                // 未加入则静默加入(无弹框)
                 if (channel.left && !channel.kicked) {
+                    FileLog.d("NLPIN: joining $uname id=${channel.id}")
                     messagesController.addUserToChat(channel.id, userConfig.currentUser, 0, null, null, null)
+                } else {
+                    FileLog.d("NLPIN: $uname already member (left=${channel.left})")
                 }
-                // 加入后 dialog 异步落地, 延迟重试置顶直到成功
+                // 加入后 dialog 异步落地, 激进重试置顶直到成功 (20 次 x 2s = 40s)
                 tryPinNaiLong(currentAccount, -channel.id, 0, uname)
             } catch (e: Throwable) {
                 FileLog.e(e)
@@ -216,17 +242,27 @@ object UpdateUtil {
         AndroidUtilities.runOnUIThread({
             try {
                 val mc = MessagesController.getInstance(currentAccount)
-                val pinned = mc.dialogs_dict.get(did) != null && mc.pinDialog(did, true, null, 0L)
-                if (pinned) {
-                    MessagesController.getMainSettings(currentAccount).edit()
-                        .putBoolean("nailong_pin_$uname", true).apply()
-                } else if (attempt < 6) {
+                val dlg = mc.dialogs_dict.get(did)
+                if (dlg != null) {
+                    val ok = mc.pinDialog(did, true, null, 0L)
+                    FileLog.d("NLPIN: pin $uname did=$did attempt=$attempt present=true ok=$ok")
+                    if (ok) {
+                        MessagesController.getMainSettings(currentAccount).edit()
+                            .putBoolean("nailong_pin_$uname", true).apply()
+                        return@runOnUIThread
+                    }
+                } else {
+                    FileLog.d("NLPIN: pin $uname did=$did attempt=$attempt present=false (dialog not loaded yet)")
+                }
+                if (attempt < 20) {
                     tryPinNaiLong(currentAccount, did, attempt + 1, uname)
+                } else {
+                    FileLog.d("NLPIN: pin $uname GAVE UP after $attempt attempts")
                 }
             } catch (e: Throwable) {
                 FileLog.e(e)
             }
-        }, 1500L)
+        }, 2000L)
     }
 
 }
