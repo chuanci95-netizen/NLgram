@@ -21620,6 +21620,10 @@ public class MessagesController extends BaseController implements NotificationCe
         final String tableMentionsForDialogs = isReactions ? "reaction_mentions" : "poll_votes_mentions";
         final String tableMentionsForTopics = isReactions ? "reaction_mentions_topics" : "poll_votes_mentions_topics";
         final boolean isVotes = !isReactions;
+        // ★魔改(NLgram): 防NPE — 某些数据状态下unreadReactions传入null导致storageQueue崩溃闪退
+        if (unreadReactions == null) {
+            return;
+        }
 
         getMessagesStorage().getStorageQueue().postRunnable(() -> {
             boolean needReload = false;
