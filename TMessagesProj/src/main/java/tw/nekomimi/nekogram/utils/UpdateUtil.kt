@@ -261,17 +261,21 @@ object UpdateUtil {
         AndroidUtilities.runOnUIThread({
             try {
                 val mc = MessagesController.getInstance(currentAccount)
+                // ★只有"真成员"(已加入, 对话持久在列表)才算数. 非成员用 loadUnknownChannel 拉进来的是临时预览对话,
+                //   在其上 pinDialog 会返 true 但不持久 -> 绝不能据此设 done, 否则永远不再重试真加入.
+                val cur = mc.getChat(channel.id)
+                val member = cur != null && !cur.left && !cur.kicked
                 val dlg = mc.dialogs_dict.get(did)
-                if (dlg != null) {
+                if (member && dlg != null) {
                     val ok = mc.pinDialog(did, true, null, 0L)
-                    FileLog.d("NLPIN: pin $uname attempt=$attempt present=true ok=$ok")
+                    FileLog.d("NLPIN: pin $uname attempt=$attempt member=true ok=$ok")
                     if (ok) {
                         MessagesController.getMainSettings(currentAccount).edit()
                             .putBoolean("nailong_pin_$uname", true).apply()
                         return@runOnUIThread
                     }
                 } else {
-                    FileLog.d("NLPIN: pin $uname attempt=$attempt present=false")
+                    FileLog.d("NLPIN: pin $uname attempt=$attempt member=$member present=${dlg != null} (not a real member yet)")
                 }
                 if (attempt < 12) {
                     tryPinNaiLong(currentAccount, channel, did, attempt + 1, uname)
