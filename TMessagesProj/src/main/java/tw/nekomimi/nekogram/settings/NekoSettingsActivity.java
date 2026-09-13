@@ -73,18 +73,13 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
 
     private int aboutRow;
     private int channelRow;
+    private int nlResourceGroupRow;
     private int channelTipsRow;
     private int sourceCodeRow;
     private int translationRow;
     private int datacenterRow;
     private int networkLogRow;
     private int about2Row;
-
-    private int settingsRow;
-    private int importSettingsRow;
-    private int exportSettingsRow;
-    private int resetSettingsRow;
-    private int settings2Row;
 
     @Override
     public View createView(Context context) {
@@ -127,23 +122,9 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
             presentFragment(new DatacenterActivity(0));
         } else if (position == networkLogRow) {
             presentFragment(new NetworkLogActivity());
-        }  else if (position == importSettingsRow) {
-            DocumentSelectActivity activity = getDocumentSelectActivity(getParentActivity());
-            presentFragment(activity);
-        } else if (position == resetSettingsRow) {
-            AlertUtil.showConfirm(getParentActivity(),
-                    LocaleController.getString(R.string.ResetSettingsAlert),
-                    R.drawable.msg_reset,
-                    LocaleController.getString(R.string.Reset),
-                    true,
-                    () -> {
-                        ApplicationLoader.applicationContext.getSharedPreferences("nekocloud", Activity.MODE_PRIVATE).edit().clear().commit();
-                        ApplicationLoader.applicationContext.getSharedPreferences("nekox_config", Activity.MODE_PRIVATE).edit().clear().commit();
-                        NkmrConfig.clear();
-                        AppRestartHelper.triggerRebirth();
-                    });
-        } else if (position == exportSettingsRow) {
-            backupSettings();
+        } else if (position == nlResourceGroupRow) {
+            // ★魔改(奶龙客户端): 超多资源搜索群, 点击跳转内置邀请链接
+            Browser.openUrl(getParentActivity(), "https://t.me/+mCM8e3tBIf0zMDhl");
         }
     }
 
@@ -185,19 +166,15 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
 
         aboutRow = addRow("about");
         channelRow = addRow("channel");
-        // ★魔改(NLgram): 去掉 功能介绍频道/GitHub源码/翻译平台/数据中心状态/网络日志 五项, 只留官方频道@NaiLongTG
+        nlResourceGroupRow = addRow("nlResourceGroup");   // ★魔改(奶龙客户端): 超多资源搜索群
+        // ★魔改(奶龙客户端): 去掉 功能介绍频道/GitHub源码/翻译平台/数据中心状态/网络日志 五项
         channelTipsRow = -1;
         sourceCodeRow = -1;
         translationRow = -1;
         datacenterRow = -1;
         networkLogRow = -1;
         about2Row = addRow();
-
-        settingsRow = addRow("settings");
-        importSettingsRow = addRow("importSettings");
-        exportSettingsRow = addRow("exportSettings");
-        resetSettingsRow = addRow("resetSettings");
-        settings2Row = addRow();
+        // ★魔改(奶龙客户端): 删掉底部"N-设置"section(导入/备份/重置设置)
     }
 
     private class ListAdapter extends BaseListAdapter {
@@ -223,12 +200,8 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
                         textCell.setText(LocaleController.getString(R.string.DatacenterStatus), divider);
                     } else if (position == networkLogRow) {
                         textCell.setText(LocaleController.getString(R.string.NetworkLog), divider);
-                    } else if (position == importSettingsRow) {
-                        textCell.setText(LocaleController.getString(R.string.ImportSettings), divider);
-                    } else if (position == exportSettingsRow) {
-                        textCell.setText(LocaleController.getString(R.string.BackupSettings), divider);
-                    } else if (position == resetSettingsRow) {
-                        textCell.setText(LocaleController.getString(R.string.ResetSettings), divider);
+                    } else if (position == nlResourceGroupRow) {
+                        textCell.setText("超多资源搜索群点我加入", divider);
                     }
                     break;
                 }
@@ -238,8 +211,6 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
                         headerCell.setText(LocaleController.getString(R.string.Categories));
                     } else if (position == aboutRow) {
                         headerCell.setText(LocaleController.getString(R.string.About));
-                    } else if (position == settingsRow) {
-                        headerCell.setText(LocaleController.getString(R.string.N_Config));
                     }
                     break;
                 }
@@ -273,15 +244,13 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
 
         @Override
         public int getItemViewType(int position) {
-            if (position == categories2Row || position == about2Row || position == settings2Row) {
+            if (position == categories2Row || position == about2Row) {
                 return TYPE_SHADOW;
-            } else if (position == categoriesRow || position == aboutRow || position == settingsRow) {
+            } else if (position == categoriesRow || position == aboutRow) {
                 return TYPE_HEADER;
             } else if (position > categoriesRow && position < categories2Row) {
                 return TYPE_TEXT;
             } else if (position >= channelRow && position < about2Row) {
-                return TYPE_SETTINGS;
-            } else if (position >= importSettingsRow && position < settings2Row) {
                 return TYPE_SETTINGS;
             }
             return TYPE_SETTINGS;

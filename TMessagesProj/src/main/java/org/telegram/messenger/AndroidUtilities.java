@@ -6684,8 +6684,8 @@ public class AndroidUtilities {
     }
 
     public static String getBuildVersionInfo() {
-        String[] abi = Build.SUPPORTED_ABIS[0].toLowerCase(Locale.ROOT).split("-");
-        return "奶龙客户端 v" + BuildConfig.VERSION_NAME + " (" + BuildConfig.BUILD_TIMESTAMP + ") " + abi[abi.length - 1];
+        // ★魔改(奶龙客户端): 版本行只留 "奶龙客户端 v版本号", 去掉构建时间戳/abi
+        return "奶龙客户端 v" + BuildConfig.VERSION_NAME;
 //        try {
 //            PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
 //            int code = pInfo.versionCode / 10;

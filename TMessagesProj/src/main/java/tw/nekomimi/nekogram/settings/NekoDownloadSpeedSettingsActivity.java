@@ -11,27 +11,36 @@ import org.telegram.ui.Cells.TextCheckCell;
 
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.config.CellGroup;
+import tw.nekomimi.nekogram.config.ConfigItem;
 import tw.nekomimi.nekogram.config.cell.AbstractConfigCell;
 import tw.nekomimi.nekogram.config.cell.ConfigCellDivider;
 import tw.nekomimi.nekogram.config.cell.ConfigCellHeader;
-import tw.nekomimi.nekogram.config.cell.ConfigCellSelectBox;
 import tw.nekomimi.nekogram.config.cell.ConfigCellTextCheck;
 
-// ★魔改(奶龙客户端): 顶层独立页 —— 下载速度 (20/35/50 倍并发下载加速)
+// ★魔改(奶龙客户端): 顶层独立页 —— 下载速度(倍速开关单选) + 液态玻璃开关
 @SuppressLint("RtlHardcoded")
 public class NekoDownloadSpeedSettingsActivity extends BaseNekoXSettingsActivity {
 
     private final CellGroup a = cellGroup = new CellGroup(this);
 
+    // 液态玻璃(高斯模糊)开关 —— 复用 forceBlurInChat
+    private final AbstractConfigCell headerGlass = cellGroup.appendCell(new ConfigCellHeader("界面"));
+    private final AbstractConfigCell liquidGlassRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.forceBlurInChat, null, "液态玻璃"));
+    private final AbstractConfigCell dividerGlass = cellGroup.appendCell(new ConfigCellDivider());
+
+    // 下载加速倍速(单选: 开一个自动关其他)
     private final AbstractConfigCell headerSpeed = cellGroup.appendCell(new ConfigCellHeader("下载速度"));
-    private final AbstractConfigCell speedBoostRow = cellGroup.appendCell(new ConfigCellSelectBox(null, NekoConfig.downloadSpeedBoost,
-            new String[]{
-                    "关闭 (默认)",
-                    "20 倍速",
-                    "35 倍速",
-                    "50 倍速",
-            }, null));
+    private final AbstractConfigCell boost5xRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.downloadBoost5x, null, "5 倍加速"));
+    private final AbstractConfigCell boost10xRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.downloadBoost10x, null, "10 倍加速"));
+    private final AbstractConfigCell boost20xRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.downloadBoost20x, null, "20 倍加速"));
+    private final AbstractConfigCell boost35xRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.downloadBoost35x, null, "35 倍加速"));
+    private final AbstractConfigCell boost50xRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.downloadBoost50x, null, "50 倍加速"));
     private final AbstractConfigCell dividerSpeed = cellGroup.appendCell(new ConfigCellDivider());
+
+    private final ConfigItem[] boosts = {
+            NekoConfig.downloadBoost5x, NekoConfig.downloadBoost10x, NekoConfig.downloadBoost20x,
+            NekoConfig.downloadBoost35x, NekoConfig.downloadBoost50x
+    };
 
     @Override
     public String getTitle() {
@@ -48,12 +57,25 @@ public class NekoDownloadSpeedSettingsActivity extends BaseNekoXSettingsActivity
 
         listView.setOnItemClickListener((view1, position) -> {
             AbstractConfigCell row = cellGroup.rows.get(position);
-            if (row instanceof ConfigCellSelectBox) {
-                ((ConfigCellSelectBox) row).onClick(view1);
-            } else if (row instanceof ConfigCellTextCheck) {
+            if (row instanceof ConfigCellTextCheck) {
                 ((ConfigCellTextCheck) row).onClick((TextCheckCell) view1);
             }
         });
+
+        // ★单选: 打开一个倍速开关时, 自动关闭其他倍速开关
+        cellGroup.callBackSettingsChanged = (key, newValue) -> {
+            for (ConfigItem b : boosts) {
+                if (b.getKey().equals(key)) {
+                    if (Boolean.TRUE.equals(newValue)) {
+                        for (ConfigItem other : boosts) {
+                            if (other != b && other.Bool()) other.setConfigBool(false);
+                        }
+                        if (listAdapter != null) listAdapter.notifyDataSetChanged();
+                    }
+                    break;
+                }
+            }
+        };
 
         addRowsToMap();
         return view;

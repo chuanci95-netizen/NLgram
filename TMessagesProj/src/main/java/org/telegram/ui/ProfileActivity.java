@@ -11177,14 +11177,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 helpHeaderRow = rowCount++;
                 faqRow = rowCount++;
                 policyRow = rowCount++;
-                if (BuildVars.LOGS_ENABLED) {
+                // ★魔改(奶龙客户端): 删除调试section(发送日志/发送最近日志/清空日志), 用户要求隐藏
+                if (false) {
                     helpSectionCell = rowCount++;
                     debugHeaderRow = rowCount++;
-                }
-                if (BuildVars.LOGS_ENABLED) {
                     sendLogsRow = rowCount++;
                     sendLastLogsRow = -1;
-                    // disable send last logs
                     clearLogsRow = rowCount++;
                 }
                 // na: disable switch backend button

@@ -196,8 +196,12 @@ public class NekoConfig {
     public static ConfigItem customAudioBitrate = addConfig("customAudioBitrate", configTypeInt, 32);
     public static ConfigItem disableGroupVoipAudioProcessing = addConfig("disableGroupVoipAudioProcessing", configTypeBool, false);
     public static ConfigItem enhancedFileLoader = addConfig("enhancedFileLoader", configTypeBool, false);
-    // ★魔改(奶龙客户端): 下载速度加速档位 0:关闭 1:20倍 2:35倍 3:50倍 (提高并发分片数 maxDownloadRequests)
-    public static ConfigItem downloadSpeedBoost = addConfig("downloadSpeedBoost", configTypeInt, 0);
+    // ★魔改(奶龙客户端): 下载加速档位(开关单选, 提高并发分片数 maxDownloadRequests) 5/10/20/35/50 倍
+    public static ConfigItem downloadBoost5x = addConfig("downloadBoost5x", configTypeBool, false);
+    public static ConfigItem downloadBoost10x = addConfig("downloadBoost10x", configTypeBool, false);
+    public static ConfigItem downloadBoost20x = addConfig("downloadBoost20x", configTypeBool, false);
+    public static ConfigItem downloadBoost35x = addConfig("downloadBoost35x", configTypeBool, false);
+    public static ConfigItem downloadBoost50x = addConfig("downloadBoost50x", configTypeBool, false);
     public static ConfigItem useOSMDroidMap = addConfig("useOSMDroidMap", configTypeBool, false);
     public static ConfigItem mapDriftingFixForGoogleMaps = addConfig("mapDriftingFixForGoogleMaps", configTypeBool, true);
 
