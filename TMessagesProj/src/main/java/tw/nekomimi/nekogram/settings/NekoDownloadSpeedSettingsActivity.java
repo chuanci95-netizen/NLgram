@@ -30,16 +30,15 @@ public class NekoDownloadSpeedSettingsActivity extends BaseNekoXSettingsActivity
 
     // 下载加速倍速(单选: 开一个自动关其他)
     private final AbstractConfigCell headerSpeed = cellGroup.appendCell(new ConfigCellHeader("下载速度"));
-    private final AbstractConfigCell boost5xRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.downloadBoost5x, null, "5 倍加速"));
-    private final AbstractConfigCell boost10xRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.downloadBoost10x, null, "10 倍加速"));
-    private final AbstractConfigCell boost20xRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.downloadBoost20x, null, "20 倍加速"));
-    private final AbstractConfigCell boost35xRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.downloadBoost35x, null, "35 倍加速"));
-    private final AbstractConfigCell boost50xRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.downloadBoost50x, null, "50 倍加速"));
+    private final AbstractConfigCell boost4xRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.downloadBoost4x, null, "4 倍加速"));
+    private final AbstractConfigCell boost12xRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.downloadBoost12x, null, "12 倍加速"));
+    private final AbstractConfigCell boost24xRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.downloadBoost24x, null, "24 倍加速"));
+    private final AbstractConfigCell boostMaxRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.downloadBoostMax, null, "极限"));
     private final AbstractConfigCell dividerSpeed = cellGroup.appendCell(new ConfigCellDivider());
 
     private final ConfigItem[] boosts = {
-            NekoConfig.downloadBoost5x, NekoConfig.downloadBoost10x, NekoConfig.downloadBoost20x,
-            NekoConfig.downloadBoost35x, NekoConfig.downloadBoost50x
+            NekoConfig.downloadBoost4x, NekoConfig.downloadBoost12x,
+            NekoConfig.downloadBoost24x, NekoConfig.downloadBoostMax
     };
 
     @Override
