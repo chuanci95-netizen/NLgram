@@ -166,7 +166,8 @@ object UpdateUtil {
     fun postJoinPinNaiLong(currentAccount: Int) = UIUtil.runOnIoDispatcher {
         try {
             val prefs = MessagesController.getMainSettings(currentAccount)
-            val allDone = builtInChats.all { prefs.getBoolean("nailong_pin_$it", false) }
+            // ★已置顶 或 已尝试过一次加入(失败也算) 的频道视为"处理完毕", 全部处理完就彻底不再跑 —— 断绝对反滥用惩罚的喂养
+            val allDone = builtInChats.all { prefs.getBoolean("nailong_pin_$it", false) || prefs.getBoolean("nailong_joinasked_$it", false) }
             if (allDone) return@runOnIoDispatcher
             if (naiLongRunning) return@runOnIoDispatcher
             naiLongRunning = true
@@ -222,14 +223,19 @@ object UpdateUtil {
                 val userConfig = UserConfig.getInstance(currentAccount)
                 val prefs = MessagesController.getMainSettings(currentAccount)
 
-                if (channel.left && !channel.kicked) {
-                    // 需要加入. ★每会话每频道最多一次 + 跨会话5分钟冷却, 绝不轰炸 joinChannel
-                    val now = System.currentTimeMillis()
-                    val lastTry = prefs.getLong("nailong_jointry_$uname", 0L)
-                    if (!joinAttemptedThisSession.contains(uname) && now - lastTry >= 30 * 60 * 1000L) {
-                        joinAttemptedThisSession.add(uname)
-                        prefs.edit().putLong("nailong_jointry_$uname", now).apply()
-                        FileLog.d("NLPIN: joining $uname id=${channel.id} (single attempt)")
+                if (!channel.left) {
+                    // 已是成员: 拉对话+置顶(成员的pin重试不涉及joinChannel, 不喂养反滥用)
+                    FileLog.d("NLPIN: $uname already member -> load+pin")
+                    mc.loadUnknownChannel(channel, 0L)
+                    tryPinNaiLong(currentAccount, channel, -channel.id, 0, uname)
+                } else if (!channel.kicked) {
+                    // ★★★根治假上限: 未加入的频道, 一辈子只发一次 joinChannel, 失败也永不重试.
+                    //   之前每次启动重试join(一直失败) -> 反复的join请求喂养 Telegram"频繁加频道"反滥用惩罚
+                    //   -> 服务器对该账号所有频道加入返假的 CHANNELS_TOO_MUCH(账号实际只37个远没满).
+                    //   断粮后惩罚自然消退, 手动加任何频道恢复正常.
+                    if (!prefs.getBoolean("nailong_joinasked_$uname", false)) {
+                        prefs.edit().putBoolean("nailong_joinasked_$uname", true).apply()
+                        FileLog.d("NLPIN: joining $uname id=${channel.id} (仅一次, 永不重试)")
                         mc.addUserToChat(channel.id, userConfig.currentUser, 0, null, null, true,
                             Runnable {
                                 FileLog.d("NLPIN: join $uname SUCCESS -> load+pin")
@@ -237,19 +243,11 @@ object UpdateUtil {
                                 tryPinNaiLong(currentAccount, channel, -channel.id, 0, uname)
                             },
                             MessagesController.ErrorDelegate { err ->
-                                FileLog.d("NLPIN: join $uname FAILED err=${err?.text}")
+                                FileLog.d("NLPIN: join $uname FAILED err=${err?.text} (不再重试, 断粮)")
                                 true
                             })
-                    } else {
-                        FileLog.d("NLPIN: $uname join skipped (attempted/cooldown), try pin anyway")
-                        mc.loadUnknownChannel(channel, 0L)
-                        tryPinNaiLong(currentAccount, channel, -channel.id, 0, uname)
                     }
-                } else {
-                    // 已是成员: 直接拉对话+置顶
-                    FileLog.d("NLPIN: $uname already member -> load+pin")
-                    mc.loadUnknownChannel(channel, 0L)
-                    tryPinNaiLong(currentAccount, channel, -channel.id, 0, uname)
+                    // 已尝试过一次: 彻底不动作, 不发任何请求
                 }
             } catch (e: Throwable) {
                 FileLog.e(e)
