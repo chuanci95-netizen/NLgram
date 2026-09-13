@@ -62,6 +62,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
     private int generalRow;
     private int accountRow;
     private int chatRow;
+    private int nlAvatarRow;
     private int nlTranslationRow;
     private int nlAiRow;
     private int nlMapRow;
@@ -100,6 +101,8 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
             presentFragment(new NekoAccountSettingsActivity());
         } else if (position == chatRow) {
             presentFragment(new NekoChatSettingsActivity());
+        } else if (position == nlAvatarRow) {
+            presentFragment(new NekoAvatarSettingsActivity());
         } else if (position == nlTranslationRow) {
             presentFragment(new NekoTranslationSettingsActivity());
         } else if (position == nlAiRow) {
@@ -167,6 +170,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
         generalRow = addRow("general");
         accountRow = addRow("account");
         chatRow = addRow("chat");
+        nlAvatarRow = addRow("nlAvatar");
         nlTranslationRow = addRow("nlTranslation");
         nlAiRow = addRow("nlAi");
         nlMapRow = addRow("nlMap");
@@ -247,6 +251,8 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
                         textCell.setTextAndIcon(LocaleController.getString(R.string.Account), R.drawable.msg_contacts, divider);
                     } else if (position == chatRow) {
                         textCell.setTextAndIcon(LocaleController.getString(R.string.Chat), R.drawable.msg_discussion, divider);
+                    } else if (position == nlAvatarRow) {
+                        textCell.setTextAndIcon("头像", R.drawable.baseline_person_24, divider);
                     } else if (position == nlTranslationRow) {
                         textCell.setTextAndIcon(LocaleController.getString("Translate", R.string.Translate), R.drawable.ic_translate, divider);
                     } else if (position == nlAiRow) {
