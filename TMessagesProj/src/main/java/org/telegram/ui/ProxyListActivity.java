@@ -174,6 +174,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                 addView(shareImageView, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.TOP, 8, 8, 8 + 48, 0));
             }
             shareImageView.setOnClickListener(v -> {
+                if (currentInfo != null && currentInfo.builtIn) return;   // ★魔改(NLgram): 内置代理不分享, IP不外露
                 StringBuilder params = new StringBuilder();
                 String address = currentInfo.address;
                 String password = currentInfo.password;
@@ -231,7 +232,10 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
             checkImageView.setScaleType(ImageView.ScaleType.CENTER);
             checkImageView.setContentDescription(getString(R.string.Edit));
             addView(checkImageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 8, 8, 8, 0));
-            checkImageView.setOnClickListener(v -> presentFragment(new ProxySettingsActivity(currentInfo)));
+            checkImageView.setOnClickListener(v -> {
+                if (currentInfo != null && currentInfo.builtIn) return;   // ★魔改(NLgram): 内置代理不给看详情(IP/端口/密钥全隐藏)
+                presentFragment(new ProxySettingsActivity(currentInfo));
+            });
 
             checkBox = new CheckBox2(context, 21);
             checkBox.setColor(Theme.key_checkbox, Theme.key_radioBackground, Theme.key_checkboxCheck);
@@ -248,8 +252,13 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
         }
 
         public void setProxy(SharedConfig.ProxyInfo proxyInfo) {
-            textView.setText(proxyInfo.address + ":" + proxyInfo.port);
             currentInfo = proxyInfo;
+            // ★魔改(NLgram): 内置代理显示名字"代理1"(隐藏真实IP:端口), 并隐藏分享/编辑按钮
+            textView.setText(proxyInfo.builtIn && !TextUtils.isEmpty(proxyInfo.name) ? proxyInfo.name : (proxyInfo.address + ":" + proxyInfo.port));
+            if (proxyInfo.builtIn) {
+                shareImageView.setVisibility(GONE);
+                checkImageView.setVisibility(GONE);
+            }
         }
 
         public void updateStatus() {
@@ -319,6 +328,10 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                 checkBox.setAlpha(1f);
                 checkBox.setScaleX(1f);
                 checkBox.setScaleY(1f);
+                if (currentInfo != null && currentInfo.builtIn) {   // ★魔改(NLgram): 内置代理始终隐藏分享/编辑按钮
+                    checkImageView.setVisibility(GONE);
+                    shareImageView.setVisibility(GONE);
+                }
             } else {
                 ValueAnimator animator = ValueAnimator.ofFloat(enabled ? 0 : 1, enabled ? 1 : 0).setDuration(200);
                 animator.setInterpolator(CubicBezierInterpolator.DEFAULT);

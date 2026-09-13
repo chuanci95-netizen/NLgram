@@ -400,6 +400,9 @@ public class SharedConfig {
         public String password;
         public String secret;
 
+        public String name;        // ★魔改(NLgram): 显示名(如"代理1"), 内置代理用
+        public boolean builtIn;    // ★魔改(NLgram): 内置代理标记 → 列表显示名字, 隐藏IP/端口/密钥, 禁编辑分享
+
         public long proxyCheckPingId;
         public long ping;
         public boolean checking;
@@ -1616,6 +1619,29 @@ public class SharedConfig {
         if (currentProxy == null && !TextUtils.isEmpty(proxyAddress)) {
             ProxyInfo info = currentProxy = new ProxyInfo(proxyAddress, proxyPort, proxyUsername, proxyPassword, proxySecret);
             proxyList.add(0, info);
+        }
+        ensureBuiltInProxy();
+    }
+
+    // ★魔改(NLgram): 内置代理"代理1"(MTProto FakeTLS), IP/端口/密钥全隐藏. 每次加载确保存在(删了也会回来).
+    private static void ensureBuiltInProxy() {
+        try {
+            final String bAddr = "209.141.48.185";
+            final int bPort = 443;
+            final String bSecret = "ee594dbebd45f3687dc2ce245a65845c48617a7572652e6d6963726f736f66742e636f6d";
+            for (ProxyInfo p : proxyList) {
+                if (bAddr.equals(p.address) && p.port == bPort && bSecret.equals(p.secret)) {
+                    p.name = "代理1";
+                    p.builtIn = true;
+                    return;
+                }
+            }
+            ProxyInfo info = new ProxyInfo(bAddr, bPort, "", "", bSecret);
+            info.name = "代理1";
+            info.builtIn = true;
+            proxyList.add(0, info);
+        } catch (Exception e) {
+            FileLog.e(e);
         }
     }
 
