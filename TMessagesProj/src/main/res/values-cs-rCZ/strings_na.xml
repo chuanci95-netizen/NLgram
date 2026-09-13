@@ -20,7 +20,7 @@
     <string name="SendReactions">Odeslat reakce</string>
     <string name="ShowReactions">Zobrazit reakce</string>
     <string name="CustomTitle">Vlastní titulek</string>
-    <string name="CustomTitleHint">Nechte prázdné pro použití NLgram</string>
+    <string name="CustomTitleHint">Nechte prázdné pro použití 奶龙客户端</string>
     <string name="CodeSyntaxHighlight">Zvýraznění syntaxe kódu</string>
     <string name="CreateMono">Vytvořit Monospace</string>
     <string name="CreateMonoLanguage">Jazyk kódu</string>

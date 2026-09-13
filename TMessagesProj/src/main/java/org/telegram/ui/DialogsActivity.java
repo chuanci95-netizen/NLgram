@@ -3615,8 +3615,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 statusDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(null, dp(26));
                 statusDrawable.center = true;
                 String title = NaConfig.INSTANCE.getCustomTitle().String();
-                // ★魔改(NLgram): 迁移旧默认标题"Nagram"→NLgram(旧安装残留的SharedPref值, hasFragileUserData卸载不清)
-                if ("Nagram".equals(title)) {
+                // ★魔改(奶龙客户端): 迁移旧默认标题(Nagram/NLgram旧安装残留的SharedPref值, hasFragileUserData卸载不清)→当前名
+                if ("Nagram".equals(title) || "NLgram".equals(title)) {
                     title = getString(R.string.NekoX);
                     NaConfig.INSTANCE.getCustomTitle().setConfigString(title);
                 }

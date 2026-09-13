@@ -46,7 +46,7 @@ public class UnifiedPushListenerServiceProvider implements PushListenerControlle
                 UnifiedPush.register(
                         ApplicationLoader.applicationContext,
                         "default",
-                        "NLgram Web Push",
+                        "奶龙客户端 Web Push",
                         null
                 );
             } catch (Throwable e) {

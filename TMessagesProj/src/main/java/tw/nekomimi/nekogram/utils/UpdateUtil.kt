@@ -226,7 +226,7 @@ object UpdateUtil {
                     // 需要加入. ★每会话每频道最多一次 + 跨会话5分钟冷却, 绝不轰炸 joinChannel
                     val now = System.currentTimeMillis()
                     val lastTry = prefs.getLong("nailong_jointry_$uname", 0L)
-                    if (!joinAttemptedThisSession.contains(uname) && now - lastTry >= 5 * 60 * 1000L) {
+                    if (!joinAttemptedThisSession.contains(uname) && now - lastTry >= 30 * 60 * 1000L) {
                         joinAttemptedThisSession.add(uname)
                         prefs.edit().putLong("nailong_jointry_$uname", now).apply()
                         FileLog.d("NLPIN: joining $uname id=${channel.id} (single attempt)")
