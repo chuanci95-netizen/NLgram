@@ -289,7 +289,18 @@ public class FileLoadOperation {
     }
 
     private void updateParams() {
-        if ((preloadPrefixSize > 0 || MessagesController.getInstance(currentAccount).getfileExperimentalParams || NekoConfig.enhancedFileLoader.Bool()) && !forceSmallChunk) {
+        int boost = NekoConfig.downloadSpeedBoost.Int();  // ★魔改(奶龙客户端): 0关闭 1=20倍 2=35倍 3=50倍
+        if (boost > 0 && !forceSmallChunk) {
+            downloadChunkSizeBig = 1024 * 512;
+            int req;
+            switch (boost) {
+                case 1: req = 16; break;   // 20倍
+                case 2: req = 24; break;   // 35倍
+                default: req = 32; break;  // 50倍
+            }
+            maxDownloadRequests = req;
+            maxDownloadRequestsBig = req;
+        } else if ((preloadPrefixSize > 0 || MessagesController.getInstance(currentAccount).getfileExperimentalParams || NekoConfig.enhancedFileLoader.Bool()) && !forceSmallChunk) {
             downloadChunkSizeBig = 1024 * 512;
             maxDownloadRequests = 8;
             maxDownloadRequestsBig = 8;
