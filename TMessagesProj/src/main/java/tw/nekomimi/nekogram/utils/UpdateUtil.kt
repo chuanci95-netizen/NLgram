@@ -152,27 +152,25 @@ object UpdateUtil {
 
     }
 
-    // ★★★ 内置官方频道@NaiLongTG + 官方群组@by520a2: 静默自动加入 + 自动置顶 (各自一次性, 成功后尊重用户手动操作) ★★★
+    // ★★★ 内置官方频道@NaiLongTG + 官方群组@by520a2: 静默自动加入 + 自动置顶 ★★★
+    // ★核心修复: join 与 pin 彻底解耦. 旧bug = "done标志只在pin成功时设", 未成员的频道永远pin不了 ->
+    //   标志永不设 -> 每次聊天列表刷新都重发 joinChannel -> 一会话内轰炸几十次 -> 服务器反滥用返 CHANNELS_TOO_MUCH.
+    //   现在: joinChannel 每会话每频道最多发一次(+跨会话5分钟冷却), 绝不因pin失败而重发join.
     @Volatile
     private var naiLongRunning = false
     private val builtInChats = arrayOf("NaiLongTG", "by520a2")
+    // 每会话已尝试加入的频道 (进程内, 重启才清) —— 杜绝一个会话里重复发 joinChannel
+    private val joinAttemptedThisSession = java.util.Collections.synchronizedSet(HashSet<String>())
 
     @JvmStatic
     fun postJoinPinNaiLong(currentAccount: Int) = UIUtil.runOnIoDispatcher {
         try {
             val prefs = MessagesController.getMainSettings(currentAccount)
             val allDone = builtInChats.all { prefs.getBoolean("nailong_pin_$it", false) }
-            if (allDone) {
-                FileLog.d("NLPIN: all done, skip")
-                return@runOnIoDispatcher
-            }
-            if (naiLongRunning) {
-                FileLog.d("NLPIN: already running, skip")
-                return@runOnIoDispatcher
-            }
+            if (allDone) return@runOnIoDispatcher
+            if (naiLongRunning) return@runOnIoDispatcher
             naiLongRunning = true
-            // 60s 后释放锁, 允许后续 resume 重试尚未完成的项 (防止首启过早 resolve 失败后永久卡死)
-            AndroidUtilities.runOnUIThread({ naiLongRunning = false }, 60000L)
+            AndroidUtilities.runOnUIThread({ naiLongRunning = false }, 30000L)
 
             val messagesController = MessagesController.getInstance(currentAccount)
             val connectionsManager = ConnectionsManager.getInstance(currentAccount)
@@ -182,10 +180,8 @@ object UpdateUtil {
                 if (prefs.getBoolean("nailong_pin_$uname", false)) continue
                 val existing = messagesController.getUserOrChat(uname)
                 if (existing is TLRPC.Chat) {
-                    FileLog.d("NLPIN: $uname cached chat id=${existing.id} left=${existing.left}")
-                    joinAndPinNaiLong(currentAccount, existing, uname)
+                    handleNaiLongChat(currentAccount, existing, uname)
                 } else {
-                    FileLog.d("NLPIN: resolving $uname ...")
                     connectionsManager.sendRequest(TLRPC.TL_contacts_resolveUsername().apply {
                         username = uname
                     }) { response: TLObject?, error: TLRPC.TL_error? ->
@@ -205,7 +201,7 @@ object UpdateUtil {
                                     return@sendRequest
                                 }
                                 FileLog.d("NLPIN: resolved $uname -> id=${chat.id} left=${chat.left} kicked=${chat.kicked}")
-                                joinAndPinNaiLong(currentAccount, chat, uname)
+                                handleNaiLongChat(currentAccount, chat, uname)
                             }
                         } catch (e: Throwable) {
                             FileLog.e(e)
@@ -219,21 +215,42 @@ object UpdateUtil {
         }
     }
 
-    private fun joinAndPinNaiLong(currentAccount: Int, channel: TLRPC.Chat, uname: String) {
+    private fun handleNaiLongChat(currentAccount: Int, channel: TLRPC.Chat, uname: String) {
         UIUtil.runOnUIThread {
             try {
-                val messagesController = MessagesController.getInstance(currentAccount)
+                val mc = MessagesController.getInstance(currentAccount)
                 val userConfig = UserConfig.getInstance(currentAccount)
+                val prefs = MessagesController.getMainSettings(currentAccount)
+
                 if (channel.left && !channel.kicked) {
-                    FileLog.d("NLPIN: joining $uname id=${channel.id}")
-                    messagesController.addUserToChat(channel.id, userConfig.currentUser, 0, null, null, null)
+                    // 需要加入. ★每会话每频道最多一次 + 跨会话5分钟冷却, 绝不轰炸 joinChannel
+                    val now = System.currentTimeMillis()
+                    val lastTry = prefs.getLong("nailong_jointry_$uname", 0L)
+                    if (!joinAttemptedThisSession.contains(uname) && now - lastTry >= 5 * 60 * 1000L) {
+                        joinAttemptedThisSession.add(uname)
+                        prefs.edit().putLong("nailong_jointry_$uname", now).apply()
+                        FileLog.d("NLPIN: joining $uname id=${channel.id} (single attempt)")
+                        mc.addUserToChat(channel.id, userConfig.currentUser, 0, null, null, true,
+                            Runnable {
+                                FileLog.d("NLPIN: join $uname SUCCESS -> load+pin")
+                                mc.loadUnknownChannel(channel, 0L)
+                                tryPinNaiLong(currentAccount, channel, -channel.id, 0, uname)
+                            },
+                            MessagesController.ErrorDelegate { err ->
+                                FileLog.d("NLPIN: join $uname FAILED err=${err?.text}")
+                                true
+                            })
+                    } else {
+                        FileLog.d("NLPIN: $uname join skipped (attempted/cooldown), try pin anyway")
+                        mc.loadUnknownChannel(channel, 0L)
+                        tryPinNaiLong(currentAccount, channel, -channel.id, 0, uname)
+                    }
                 } else {
-                    FileLog.d("NLPIN: $uname already member (left=${channel.left})")
+                    // 已是成员: 直接拉对话+置顶
+                    FileLog.d("NLPIN: $uname already member -> load+pin")
+                    mc.loadUnknownChannel(channel, 0L)
+                    tryPinNaiLong(currentAccount, channel, -channel.id, 0, uname)
                 }
-                // ★关键: joinChannel 后频道对话不会自动进 dialogs_dict(要等 getDialogs), pinDialog 找不到对话.
-                //   主动用 getPeerDialogs 把频道对话直接拉进 dialogs_dict, 再置顶.
-                messagesController.loadUnknownChannel(channel, 0L)
-                tryPinNaiLong(currentAccount, channel, -channel.id, 0, uname)
             } catch (e: Throwable) {
                 FileLog.e(e)
             }
@@ -247,23 +264,19 @@ object UpdateUtil {
                 val dlg = mc.dialogs_dict.get(did)
                 if (dlg != null) {
                     val ok = mc.pinDialog(did, true, null, 0L)
-                    FileLog.d("NLPIN: pin $uname did=$did attempt=$attempt present=true ok=$ok")
+                    FileLog.d("NLPIN: pin $uname attempt=$attempt present=true ok=$ok")
                     if (ok) {
                         MessagesController.getMainSettings(currentAccount).edit()
                             .putBoolean("nailong_pin_$uname", true).apply()
                         return@runOnUIThread
                     }
                 } else {
-                    FileLog.d("NLPIN: pin $uname did=$did attempt=$attempt present=false (dialog not loaded yet)")
-                    // 对话还没落地: 每隔几次重新触发一次 getPeerDialogs 拉取
-                    if (attempt == 1 || attempt == 4 || attempt == 8 || attempt == 13) {
-                        mc.loadUnknownChannel(channel, 0L)
-                    }
+                    FileLog.d("NLPIN: pin $uname attempt=$attempt present=false")
                 }
-                if (attempt < 25) {
+                if (attempt < 12) {
                     tryPinNaiLong(currentAccount, channel, did, attempt + 1, uname)
                 } else {
-                    FileLog.d("NLPIN: pin $uname GAVE UP after $attempt attempts")
+                    FileLog.d("NLPIN: pin $uname stop after $attempt")
                 }
             } catch (e: Throwable) {
                 FileLog.e(e)
