@@ -151,7 +151,6 @@ public class NekoInterfaceSettingsActivity extends BaseNekoXSettingsActivity {
     // 界面透明/背景图 变更: 更新激活标志 + 重启彻底应用(聊天列表等用缓存画笔的界面必须重启才透, live重建不彻底)
     private void restartToApply() {
         try {
-            Theme.updateNlTransparentActive();
             AppRestartHelper.triggerRebirth();
         } catch (Exception ignore) {
         }

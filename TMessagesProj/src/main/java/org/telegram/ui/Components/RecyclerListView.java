@@ -3596,7 +3596,7 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
             sectionBackgroundPaint.setShadowLayer(0, 0, 0, 0);
         }
         int nlSecColor = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
-        if (Theme.nlTransparentActive) { // ★奶龙客户端 界面透明: 全app新版页面的 section 卡片(设置按钮等)白底一并镂空透明
+        if (Theme.nlIsTransparentActive()) { // ★奶龙客户端 界面透明: 全app新版页面的 section 卡片(设置按钮等)白底一并镂空透明
             int nlA = tw.nekomimi.nekogram.NekoConfig.interfaceTransparentAlpha.Int();
             if (nlA < 0) nlA = 0; else if (nlA > 100) nlA = 100;
             nlSecColor = ((nlA * 255 / 100) << 24) | (nlSecColor & 0x00FFFFFF);

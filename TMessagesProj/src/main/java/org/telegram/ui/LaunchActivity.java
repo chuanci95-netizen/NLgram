@@ -340,7 +340,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     // ★奶龙客户端: 刷新根容器底层的自定义背景图(界面透明开启时透出), 空路径则隐藏
     public void updateCustomBackground() {
         try {
-            org.telegram.ui.ActionBar.Theme.updateNlTransparentActive();
             if (nlBackgroundImageView == null) return;
             String path = tw.nekomimi.nekogram.NekoConfig.customBackgroundImage.String();
             if (path != null && !path.isEmpty()) {

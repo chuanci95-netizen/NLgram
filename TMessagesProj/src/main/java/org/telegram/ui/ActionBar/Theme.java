@@ -9120,16 +9120,15 @@ public class Theme {
 
     // ★奶龙客户端 界面透明: getColor 高频调用, 用递归防护避免取真色时死循环
     private static boolean nlTransReentry = false;
-    // 激活标志: 仅当「界面透明开」且「已设背景图」才真激活, 缓存成 boolean 供热路径快速判断; 没图=永不透明(避免露出空白窗口底像坏了)
-    public static boolean nlTransparentActive = false;
 
-    public static void updateNlTransparentActive() {
+    // 界面透明是否真激活 = 开关开 且 已设背景图。每次直接读config(Bool是字段cast/String返回同一引用, 便宜), 避免缓存标志的初始化时机问题; 没图=永不透明(杜绝露出空白窗口底像坏了)
+    public static boolean nlIsTransparentActive() {
         try {
-            nlTransparentActive = tw.nekomimi.nekogram.NekoConfig.interfaceTransparent.Bool()
-                    && tw.nekomimi.nekogram.NekoConfig.customBackgroundImage.String() != null
-                    && !tw.nekomimi.nekogram.NekoConfig.customBackgroundImage.String().isEmpty();
+            if (!tw.nekomimi.nekogram.NekoConfig.interfaceTransparent.Bool()) return false;
+            String bg = tw.nekomimi.nekogram.NekoConfig.customBackgroundImage.String();
+            return bg != null && !bg.isEmpty();
         } catch (Exception e) {
-            nlTransparentActive = false;
+            return false;
         }
     }
 
@@ -9143,7 +9142,7 @@ public class Theme {
 
     public static int getColor(int key, boolean[] isDefault, boolean ignoreAnimation) {
         // ★奶龙客户端 界面透明: 给页面底/卡片背景色注入透明, 让自定义背景图+液态玻璃透出来(仅已设背景图时激活)
-        if (!nlTransReentry && nlTransparentActive) {
+        if (!nlTransReentry && nlIsTransparentActive()) {
             if (key == key_windowBackgroundGray) {
                 return 0; // 页面底 全透明, 露出背景图
             }
