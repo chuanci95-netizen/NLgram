@@ -19,6 +19,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LiteMode;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Components.LayoutHelper;
@@ -39,6 +40,7 @@ import tw.nekomimi.nekogram.config.cell.ConfigCellDivider;
 import tw.nekomimi.nekogram.config.cell.ConfigCellHeader;
 import tw.nekomimi.nekogram.config.cell.ConfigCellTextCheck;
 import tw.nekomimi.nekogram.config.cell.ConfigCellTextDetail;
+import tw.nekomimi.nekogram.helpers.AppRestartHelper;
 
 import xyz.nextalone.nagram.NaConfig;
 
@@ -96,7 +98,12 @@ public class NekoInterfaceSettingsActivity extends BaseNekoXSettingsActivity {
                 LiteMode.toggleFlag(LiteMode.FLAG_CHAT_BLUR, on);
                 applyGlassLive();
             } else if (key.equals(NekoConfig.interfaceTransparent.getKey())) {
-                applyTransparentLive();
+                if (on && NekoConfig.customBackgroundImage.String().isEmpty()) {
+                    // 开了界面透明但还没设背景图 → 先去相册选一张(选完自动重启应用), 没图透明毫无意义还会露空白
+                    pickBackgroundImage();
+                } else {
+                    restartToApply();
+                }
             }
         };
 
@@ -141,15 +148,11 @@ public class NekoInterfaceSettingsActivity extends BaseNekoXSettingsActivity {
         }
     }
 
-    // 界面透明/背景图/透明度 变更: 刷新背景图 + 重建视图, 即时透出
-    private void applyTransparentLive() {
+    // 界面透明/背景图 变更: 更新激活标志 + 重启彻底应用(聊天列表等用缓存画笔的界面必须重启才透, live重建不彻底)
+    private void restartToApply() {
         try {
-            if (getParentActivity() instanceof LaunchActivity) {
-                ((LaunchActivity) getParentActivity()).updateCustomBackground();
-            }
-            if (parentLayout != null) {
-                parentLayout.rebuildAllFragmentViews(false, false);
-            }
+            Theme.updateNlTransparentActive();
+            AppRestartHelper.triggerRebirth();
         } catch (Exception ignore) {
         }
     }
@@ -168,12 +171,7 @@ public class NekoInterfaceSettingsActivity extends BaseNekoXSettingsActivity {
 
     private void clearBackgroundImage() {
         NekoConfig.customBackgroundImage.setConfigString("");
-        if (getParentActivity() instanceof LaunchActivity) {
-            ((LaunchActivity) getParentActivity()).updateCustomBackground();
-        }
-        if (listAdapter != null) {
-            listAdapter.notifyDataSetChanged();
-        }
+        restartToApply();
     }
 
     @Override
@@ -197,10 +195,7 @@ public class NekoInterfaceSettingsActivity extends BaseNekoXSettingsActivity {
                 if (!NekoConfig.interfaceTransparent.Bool()) {
                     NekoConfig.interfaceTransparent.setConfigBool(true);
                 }
-                applyTransparentLive();
-                if (listAdapter != null) {
-                    listAdapter.notifyDataSetChanged();
-                }
+                restartToApply(); // 重启彻底应用, 修"换背景图没效果"
             } catch (Exception e) {
                 FileLog.e(e);
             } finally {
@@ -257,7 +252,8 @@ public class NekoInterfaceSettingsActivity extends BaseNekoXSettingsActivity {
                     } else {
                         NekoConfig.interfaceTransparentAlpha.setConfigInt(Math.round(progress * 100f));
                         if (stop) {
-                            applyTransparentLive(); // 松手后重建, 露出透明效果
+                            // 透明度实时预览: 全局重建界面(不重启), 卡片重新按新透明度绘制
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
                         }
                     }
                     invalidate();
