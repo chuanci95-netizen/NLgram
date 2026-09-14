@@ -68,6 +68,10 @@ public class NekoConfig {
     // ★奶龙客户端 界面设置(深度版液态玻璃) —— 这两个是 LiteMode 位标志的 UI 镜像, 真值以 LiteMode 为准, 每次进页同步
     public static ConfigItem liquidGlassEnable = addConfig("LiquidGlassEnable", configTypeBool, false);
     public static ConfigItem gaussianBlurEnable = addConfig("GaussianBlurEnable", configTypeBool, true);
+    // ★奶龙客户端 界面透明 + 自定义背景图 —— 背景色注入透明(Theme.getColor), 根容器垫底画背景图(LaunchActivity)
+    public static ConfigItem interfaceTransparent = addConfig("InterfaceTransparent", configTypeBool, false);
+    public static ConfigItem interfaceTransparentAlpha = addConfig("InterfaceTransparentAlpha", configTypeInt, 35); // 卡片/按钮不透明度% (0=全透明, 100=完全不透)
+    public static ConfigItem customBackgroundImage = addConfig("CustomBackgroundImage", configTypeString, ""); // 自定义背景图 文件绝对路径, 空=无
     public static ConfigItem mapPreviewProvider = addConfig("MapPreviewProvider", configTypeInt, 0);
     public static ConfigItem transparentStatusBar = addConfig("TransparentStatusBar", configTypeBool, true);
     public static ConfigItem forceBlurInChat = addConfig("forceBlurInChat", configTypeBool, false);

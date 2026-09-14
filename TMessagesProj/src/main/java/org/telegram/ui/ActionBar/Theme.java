@@ -9118,6 +9118,9 @@ public class Theme {
         return currentColors.get(key);
     }
 
+    // ★奶龙客户端 界面透明: getColor 高频调用, 用递归防护避免取真色时死循环
+    private static boolean nlTransReentry = false;
+
     public static int getColor(int key) {
         return getColor(key, null, false);
     }
@@ -9127,6 +9130,20 @@ public class Theme {
     }
 
     public static int getColor(int key, boolean[] isDefault, boolean ignoreAnimation) {
+        // ★奶龙客户端 界面透明: 给页面底/卡片背景色注入透明, 让自定义背景图+液态玻璃透出来
+        if (!nlTransReentry && tw.nekomimi.nekogram.NekoConfig.interfaceTransparent.Bool()) {
+            if (key == key_windowBackgroundGray) {
+                return 0; // 页面底 全透明, 露出背景图
+            }
+            if (key == key_windowBackgroundWhite) {
+                nlTransReentry = true;
+                int base = getColor(key, isDefault, ignoreAnimation) & 0x00FFFFFF;
+                nlTransReentry = false;
+                int a = tw.nekomimi.nekogram.NekoConfig.interfaceTransparentAlpha.Int();
+                if (a < 0) a = 0; else if (a > 100) a = 100;
+                return ((a * 255 / 100) << 24) | base; // 卡片/按钮半透明磨砂
+            }
+        }
         if (!ignoreAnimation && animatingColors != null) {
             int index = animatingColors.indexOfKey(key);
             if (index >= 0) {

@@ -335,6 +335,30 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     private final IPipActivityHandler pipActivityHandler = pipActivityController.getHandler();
 
     private ImageView themeSwitchImageView;
+    private ImageView nlBackgroundImageView; // ★奶龙客户端 自定义背景图
+
+    // ★奶龙客户端: 刷新根容器底层的自定义背景图(界面透明开启时透出), 空路径则隐藏
+    public void updateCustomBackground() {
+        try {
+            if (nlBackgroundImageView == null) return;
+            String path = tw.nekomimi.nekogram.NekoConfig.customBackgroundImage.String();
+            if (path != null && !path.isEmpty()) {
+                java.io.File f = new java.io.File(path);
+                if (f.exists()) {
+                    android.graphics.Bitmap bmp = android.graphics.BitmapFactory.decodeFile(path);
+                    if (bmp != null) {
+                        nlBackgroundImageView.setImageBitmap(bmp);
+                        nlBackgroundImageView.setVisibility(View.VISIBLE);
+                        return;
+                    }
+                }
+            }
+            nlBackgroundImageView.setImageDrawable(null);
+            nlBackgroundImageView.setVisibility(View.GONE);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
     private ImageView themeSwitchSunView;
     public ActionBarLayout actionBarLayout;
     private ActionBarLayout layersActionBarLayout;
@@ -501,6 +525,11 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         frameLayout.setClipToPadding(false);
         frameLayout.setClipChildren(false);
         setContentView(frameLayout);
+        // ★奶龙客户端 自定义背景图: 根容器最底层(index 0)垫图, drawer/各页透明时透出
+        nlBackgroundImageView = new ImageView(this);
+        nlBackgroundImageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        frameLayout.addView(nlBackgroundImageView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        updateCustomBackground();
         rootAnimatedInsetsListener = new WindowAnimatedInsetsProvider(frameLayout);
         pipActivityController.addPipListener(new IPipActivityListener() {
             final ActivityVisibilityController activityVisibilityController = createActivityVisibilityController(false);
