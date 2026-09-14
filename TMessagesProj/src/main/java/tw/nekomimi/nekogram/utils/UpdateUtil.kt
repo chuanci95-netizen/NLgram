@@ -166,49 +166,24 @@ object UpdateUtil {
     fun postJoinPinNaiLong(currentAccount: Int) = UIUtil.runOnIoDispatcher {
         try {
             val prefs = MessagesController.getMainSettings(currentAccount)
-            // ★已置顶 或 已尝试过一次加入(失败也算) 的频道视为"处理完毕", 全部处理完就彻底不再跑 —— 断绝对反滥用惩罚的喂养
-            val allDone = builtInChats.all { prefs.getBoolean("nailong_pin_$it", false) || prefs.getBoolean("nailong_joinasked_$it", false) }
+            // ★方案A: 全部内置频道都置顶完就彻底不再跑
+            val allDone = builtInChats.all { prefs.getBoolean("nailong_pin_$it", false) }
             if (allDone) return@runOnIoDispatcher
             if (naiLongRunning) return@runOnIoDispatcher
             naiLongRunning = true
             AndroidUtilities.runOnUIThread({ naiLongRunning = false }, 30000L)
 
             val messagesController = MessagesController.getInstance(currentAccount)
-            val connectionsManager = ConnectionsManager.getInstance(currentAccount)
-            val messagesStorage = MessagesStorage.getInstance(currentAccount)
 
             for (uname in builtInChats) {
                 if (prefs.getBoolean("nailong_pin_$uname", false)) continue
+                // ★方案A: 只把"本地已知且已是成员"的内置频道置顶; 绝不 resolve、绝不 join 未加入的频道
+                //   (零多余网络请求, 从根上杜绝喂养 Telegram 反滥用给 session 打假上限标记)
                 val existing = messagesController.getUserOrChat(uname)
-                if (existing is TLRPC.Chat) {
+                if (existing is TLRPC.Chat && !existing.left && !existing.kicked) {
                     handleNaiLongChat(currentAccount, existing, uname)
-                } else {
-                    connectionsManager.sendRequest(TLRPC.TL_contacts_resolveUsername().apply {
-                        username = uname
-                    }) { response: TLObject?, error: TLRPC.TL_error? ->
-                        try {
-                            if (error != null) {
-                                FileLog.d("NLPIN: resolve $uname ERROR=${error.text}")
-                                return@sendRequest
-                            }
-                            if (response is TLRPC.TL_contacts_resolvedPeer) {
-                                messagesController.putUsers(response.users, false)
-                                messagesController.putChats(response.chats, false)
-                                messagesStorage.putUsersAndChats(response.users, response.chats, false, true)
-                                val chat = response.chats.find { it.username != null && it.username.equals(uname, true) }
-                                    ?: response.chats.firstOrNull()
-                                if (chat == null) {
-                                    FileLog.d("NLPIN: resolve $uname NO CHAT in peer")
-                                    return@sendRequest
-                                }
-                                FileLog.d("NLPIN: resolved $uname -> id=${chat.id} left=${chat.left} kicked=${chat.kicked}")
-                                handleNaiLongChat(currentAccount, chat, uname)
-                            }
-                        } catch (e: Throwable) {
-                            FileLog.e(e)
-                        }
-                    }
                 }
+                // 查不到 / 未加入: 什么都不做. 用户到"官方频道"手动加入后, 下次启动会自动置顶.
             }
         } catch (e: Throwable) {
             FileLog.e(e)
@@ -219,36 +194,11 @@ object UpdateUtil {
     private fun handleNaiLongChat(currentAccount: Int, channel: TLRPC.Chat, uname: String) {
         UIUtil.runOnUIThread {
             try {
+                // ★方案A: 只有"已是成员"才会走到这里 -> 拉对话+置顶; 绝不发 joinChannel(自动加入功能已彻底删除)
                 val mc = MessagesController.getInstance(currentAccount)
-                val userConfig = UserConfig.getInstance(currentAccount)
-                val prefs = MessagesController.getMainSettings(currentAccount)
-
-                if (!channel.left) {
-                    // 已是成员: 拉对话+置顶(成员的pin重试不涉及joinChannel, 不喂养反滥用)
-                    FileLog.d("NLPIN: $uname already member -> load+pin")
-                    mc.loadUnknownChannel(channel, 0L)
-                    tryPinNaiLong(currentAccount, channel, -channel.id, 0, uname)
-                } else if (!channel.kicked) {
-                    // ★★★根治假上限: 未加入的频道, 一辈子只发一次 joinChannel, 失败也永不重试.
-                    //   之前每次启动重试join(一直失败) -> 反复的join请求喂养 Telegram"频繁加频道"反滥用惩罚
-                    //   -> 服务器对该账号所有频道加入返假的 CHANNELS_TOO_MUCH(账号实际只37个远没满).
-                    //   断粮后惩罚自然消退, 手动加任何频道恢复正常.
-                    if (!prefs.getBoolean("nailong_joinasked_$uname", false)) {
-                        prefs.edit().putBoolean("nailong_joinasked_$uname", true).apply()
-                        FileLog.d("NLPIN: joining $uname id=${channel.id} (仅一次, 永不重试)")
-                        mc.addUserToChat(channel.id, userConfig.currentUser, 0, null, null, true,
-                            Runnable {
-                                FileLog.d("NLPIN: join $uname SUCCESS -> load+pin")
-                                mc.loadUnknownChannel(channel, 0L)
-                                tryPinNaiLong(currentAccount, channel, -channel.id, 0, uname)
-                            },
-                            MessagesController.ErrorDelegate { err ->
-                                FileLog.d("NLPIN: join $uname FAILED err=${err?.text} (不再重试, 断粮)")
-                                true
-                            })
-                    }
-                    // 已尝试过一次: 彻底不动作, 不发任何请求
-                }
+                FileLog.d("NLPIN: $uname member -> load+pin (无自动加入)")
+                mc.loadUnknownChannel(channel, 0L)
+                tryPinNaiLong(currentAccount, channel, -channel.id, 0, uname)
             } catch (e: Throwable) {
                 FileLog.e(e)
             }
