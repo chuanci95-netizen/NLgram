@@ -172,8 +172,9 @@ android {
         versionName verName
         versionCode verCode
 
-        def appId = "11535358"
-        def appHash = "33d372962fadb01df47e6ceed4e33cd6"
+        // ★奶龙客户端: 换成官方api_id(4)——原第三方id 11535358 被Telegram反滥用限制(加频道假CHANNELS_TOO_MUCH), 换官方合法身份解除
+        def appId = "4"
+        def appHash = "014b35b6184100b085b0d0572f9b5103"
 
         //obtain your own keys at https://core.telegram.org/api/obtaining_api_id
 
